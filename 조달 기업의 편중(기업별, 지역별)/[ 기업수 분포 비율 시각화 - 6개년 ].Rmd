@@ -1,0 +1,93 @@
+---
+title: '[ 기업수 분포 비율 시각화 - 6개년 ]'
+author: "Seo Ji Young"
+date: '2022 2 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# 필요한 세팅
+rm(list = ls()); gc(reset = T)
+require(dplyr); require(readxl)
+```
+
+```{r}
+# 엑셀 문서 읽기(1-26. 기업구분별 현황)
+Excel_1 = read_xlsx("./조달청/1-26. 기업구분별 현황(2015_12~2016_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_2 = read_xlsx("./조달청/1-26. 기업구분별 현황(2016_12~2017_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_3 = read_xlsx("./조달청/1-26. 기업구분별 현황(2017_12~2018_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_4 = read_xlsx("./조달청/1-26. 기업구분별 현황(2018_12~2019_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_5 = read_xlsx("./조달청/1-26. 기업구분별 현황(2019_12~2020_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_6 = read_xlsx("./조달청/1-26. 기업구분별 현황(2020_12~2021_11).xlsx") %>% data.frame(stringsAsFactors = F)
+
+data_list = list(Excel_1, Excel_2, Excel_3, Excel_4, Excel_5, Excel_6)
+
+# 중복제외한 기업수 연도별로 저장하기(final_year_num)
+company = c("합계","대기업", "중견기업", "중소기업", "외국기업", "비영리법인 등 기타", "미분류")
+year_num_list = list()
+for(i in 1:6){
+  year_num_list[[i]] = data_list[[i]][3, -1]
+  year_num_list[[i]] = t(year_num_list[[i]])
+  rownames(year_num_list[[i]]) = company
+  colnames(year_num_list[[i]]) = 2015+i
+}
+final_year_num = year_num_list %>% do.call(cbind,.) %>% data.frame(stringsAsFactors = F)
+final_year_num = final_year_num %>% apply(., 2, as.numeric)
+
+# 기업 퍼센트 비율 구하기(final_year_per)
+final_year_per = final_year_num
+for(i in 1:6){
+  for(j in 1:7){
+    final_year_per[j, i] = final_year_per[j, i]/final_year_num[1, i]*100
+  }
+}
+final_year_per
+rownames(final_year_per) = company
+colnames(final_year_per) = c(2016:2021)
+final_year_per = final_year_per %>% as.data.frame() %>% slice(c(2:nrow(final_year_per)))
+final_year_per
+
+# 시각화 – 년도별 기업수 비율(pie chart)(2016년 ~ 2021년)[6개년]
+final_plot_2016 = final_year_per[,1] %>% as.data.frame()
+rownames(final_plot_2016) = rownames(final_year_per)
+final_plot_2016 = final_plot_2016 %>% mutate("기업구분" = rownames(final_plot_2016))
+final_plot_2016 = final_plot_2016 %>% rename(value = ".")
+
+plot_2016= ggplot(data = final_plot_2016) + geom_bar(aes(x = "", y = value, fill = as.factor(기업구분)), stat = "identity") + coord_polar("y", start = 0) + labs(title = "2016년 기업구분별 현황")
+
+final_plot_2017 = final_year_per[,2] %>% as.data.frame()
+rownames(final_plot_2017) = rownames(final_year_per)
+final_plot_2017 = final_plot_2017 %>% mutate("기업구분" = rownames(final_plot_2017))
+final_plot_2017 = final_plot_2017 %>% rename(value = ".")
+
+plot_2017= ggplot(data = final_plot_2017) + geom_bar(aes(x = "", y = value, fill = as.factor(기업구분)), stat = "identity") + coord_polar("y", start = 0) + labs(title = "2017년 기업구분별 현황")
+
+final_plot_2018 = final_year_per[,3] %>% as.data.frame()
+rownames(final_plot_2018) = rownames(final_year_per)
+final_plot_2018 = final_plot_2018 %>% mutate("기업구분" = rownames(final_plot_2017))
+final_plot_2018 = final_plot_2018 %>% rename(value = ".")
+
+plot_2018= ggplot(data = final_plot_2018) + geom_bar(aes(x = "", y = value, fill = as.factor(기업구분)), stat = "identity") + coord_polar("y", start = 0) + labs(title = "2018년 기업구분별 현황")
+
+final_plot_2019 = final_year_per[,4] %>% as.data.frame()
+rownames(final_plot_2019) = rownames(final_year_per)
+final_plot_2019 = final_plot_2019 %>% mutate("기업구분" = rownames(final_plot_2017))
+final_plot_2019 = final_plot_2019 %>% rename(value = ".")
+
+plot_2019= ggplot(data = final_plot_2019) + geom_bar(aes(x = "", y = value, fill = as.factor(기업구분)), stat = "identity") + coord_polar("y", start = 0) + labs(title = "2019년 기업구분별 현황")
+
+final_plot_2020 = final_year_per[,5] %>% as.data.frame()
+rownames(final_plot_2020)= rownames(final_year_per)
+final_plot_2020 = final_plot_2020 %>% mutate("기업구분" = rownames(final_plot_2017))
+final_plot_2020 = final_plot_2020 %>% rename(value = ".")
+
+plot_2020= ggplot(data = final_plot_2020) + geom_bar(aes(x = "", y = value, fill = as.factor(기업구분)), stat = "identity") + coord_polar("y", start = 0) + labs(title = "2020년 기업구분별 현황")
+
+final_plot_2021 = final_year_per[,6] %>% as.data.frame()
+rownames(final_plot_2021)= rownames(final_year_per)
+final_plot_2021 = final_plot_2021 %>% mutate("기업구분" = rownames(final_plot_2017))
+final_plot_2021 = final_plot_2021 %>% rename(value = ".")
+
+plot_2021= ggplot(data = final_plot_2021) + geom_bar(aes(x = "", y = value, fill = as.factor(기업구분)), stat = "identity") + coord_polar("y", start = 0) + labs(title = "2021년 기업구분별 현황")
+```

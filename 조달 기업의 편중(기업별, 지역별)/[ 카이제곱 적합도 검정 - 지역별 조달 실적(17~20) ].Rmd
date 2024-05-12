@@ -1,0 +1,141 @@
+---
+title: '[ 카이제곱 적합도 검정 - 지역별 조달 실적(17~20) ]'
+author: "Seo Ji Young"
+date: '2022 2 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# 필요한 세팅
+rm(list = ls()); gc(reset = T)
+require(readxl); require(dplyr)
+```
+
+```{r}
+# 지역별 기업 수 데이터 읽기
+Excel = read_xlsx("./조달청/산업별 지역별 기업수(2017~2020).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel = Excel[-1, -1]
+colnames(Excel) = c("지역", 2017, 2018, 2019, 2020)
+
+# 지역명 저장하기
+region = Excel[, 1]
+
+# 지역명 없애고 숫자형으로 바꾸기(계산하기 위해)[Excel : 기업수 2017~2020 기업수 비율 ]
+Excel = Excel[, -1] %>% apply(., 2, as.numeric) %>% as.data.frame()
+rownames(Excel) = region
+Excel
+sum_num = Excel[1, ]
+Excel = Excel[-1, ]
+for(i in 1:4){
+  for(j in 1:nrow(Excel)){
+    Excel[j, i] = Excel[j, i]/sum_num[i]*100
+  }
+}
+per_dat = Excel
+
+# 시작 전
+region = region[-1]
+per_group = list(); region_list = list(); sum_price = c()
+
+# 2017년
+Excel = read_xlsx("./조달청/1-33. 조달기업별 실적 순위(2017).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel = Excel %>% slice(c(2:nrow(Excel))) %>% filter("건수" > 0 & "X0" > 0)
+Excel
+
+for(i in 1:length(region)){
+  region_list[[i]] = Excel[, c(2, 5)] %>% filter(소재지 == region[i])
+  sum_price[i] = sum(as.numeric(region_list[[i]][, 2]))
+}
+
+final_dat = data.frame(합계금액 = sum_price)
+rownames(final_dat) = region
+final_dat = final_dat %>% apply(., 2, as.numeric) %>% as.data.frame()
+final_dat = final_dat %>% mutate(합계금액비율 = 1:nrow(final_dat))
+
+for(i in 1:nrow(final_dat)){
+  final_dat[i, 2] = final_dat[i, 1]/sum(final_dat[, 1])*100
+}
+rownames(final_dat) = region
+per_group[[1]] = final_dat
+
+# 2018년
+Excel = read_xlsx("./조달청/1-33. 조달기업별 실적 순위(2018).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel = Excel %>% slice(c(2:nrow(Excel))) %>% filter("건수" > 0 & "X0" > 0)
+Excel
+
+for(i in 1:length(region)){
+  region_list[[i]] = Excel[, c(2, 5)] %>% filter(소재지 == region[i])
+  sum_price[i] = sum(as.numeric(region_list[[i]][, 2]))
+}
+
+final_dat = data.frame(합계금액 = sum_price)
+rownames(final_dat) = region
+final_dat = final_dat %>% apply(., 2, as.numeric) %>% as.data.frame()
+final_dat = final_dat %>% mutate(합계금액비율 = 1:nrow(final_dat))
+
+for(i in 1:nrow(final_dat)){
+  final_dat[i, 2] = final_dat[i, 1]/sum(final_dat[, 1])*100
+}
+rownames(final_dat) = region
+per_group[[2]] = final_dat
+
+# 2019년
+Excel = read_xlsx("./조달청/1-33. 조달기업별 실적 순위(2019).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel = Excel %>% slice(c(2:nrow(Excel))) %>% filter("건수" > 0 & "X0" > 0)
+Excel
+
+for(i in 1:length(region)){
+  region_list[[i]] = Excel[, c(2, 5)] %>% filter(소재지 == region[i])
+  sum_price[i] = sum(as.numeric(region_list[[i]][, 2]))
+}
+
+final_dat = data.frame(합계금액 = sum_price)
+rownames(final_dat) = region
+final_dat = final_dat %>% apply(., 2, as.numeric) %>% as.data.frame()
+final_dat = final_dat %>% mutate(합계금액비율 = 1:nrow(final_dat))
+
+for(i in 1:nrow(final_dat)){
+  final_dat[i, 2] = final_dat[i, 1]/sum(final_dat[, 1])*100
+}
+rownames(final_dat) = region
+per_group[[3]] = final_dat
+
+# 2020년
+Excel = read_xlsx("./조달청/1-33. 조달기업별 실적 순위(2020).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel = Excel %>% slice(c(2:nrow(Excel))) %>% filter("건수" > 0 & "X0" > 0)
+Excel
+
+for(i in 1:length(region)){
+  region_list[[i]] = Excel[, c(2, 5)] %>% filter(소재지 == region[i])
+  sum_price[i] = sum(as.numeric(region_list[[i]][, 2]))
+}
+
+final_dat = data.frame(합계금액 = sum_price)
+rownames(final_dat) = region
+final_dat = final_dat %>% apply(., 2, as.numeric) %>% as.data.frame()
+final_dat = final_dat %>% mutate(합계금액비율 = 1:nrow(final_dat))
+
+for(i in 1:nrow(final_dat)){
+  final_dat[i, 2] = final_dat[i, 1]/sum(final_dat[, 1])*100
+}
+rownames(final_dat) = region
+per_group[[4]] = final_dat
+
+test = list()
+for(i in 1:4){
+  test[[i]] = data.frame("금액비율" = per_group[[i]][, 2], "기대비율" = per_dat[[i]])
+  test[[i]] = test[[i]] %>% mutate("관측값-기댓값" = test[[i]][, 1]-test[[i]][, 2])
+  test[[i]] = test[[i]] %>% mutate("차이제곱값" = test[[i]][, 3]*test[[i]][, 3])
+  test[[i]] = test[[i]] %>% mutate("차이제곱값/기대비율" = test[[i]][, 4]/test[[i]][, 2])
+}
+test
+
+# test_sum : 검정통계량 / test_result : 귀무가설 기각 여부
+test_sum = c(); test_result = c()
+for(i in 1:4){
+  test_sum[i] = sum(test[[i]][, 5])
+  test_result[i] = test_sum[i] > 26.3 # 카이제곱 분포에서 자유도가 16, 유의확률 0.05인 카이제곱 값
+}
+test_sum; test_result
+```

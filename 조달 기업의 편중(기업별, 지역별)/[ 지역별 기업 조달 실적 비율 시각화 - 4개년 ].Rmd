@@ -1,0 +1,55 @@
+---
+title: '[ 지역별 기업 조달 실적 비율 시각화 - 4개년 ]'
+author: "Seo Ji Young"
+date: '2022 2 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# 필요한 세팅
+rm(list=ls()); gc(reset = T)
+require(readxl); require(dplyr)
+library(ggmap); library(ggplot2); library(raster)
+library(rgeos); library(maptools); library(rgdal)
+
+```
+
+```{r}
+# 금액과 건수로 나누어 데이터 읽기(price_dat, num_dat)
+price_dat = read_xlsx("./1-33. 조달기업별 실적 순위(2017~2020).xlsx") %>% data.frame(stringsAsFactors = F)
+price_dat = price_dat %>% slice(c(2:nrow(price_dat))) %>% filter(건수 > 0 & 금액 > 0)
+num_dat = price_dat %>% arrange(건수)
+price = price_dat$금액
+head(price, 10)
+tail(price, 10)
+
+# 지역별 합계 금액 데이터
+unique(price_dat$소재지)
+local_dat = price_dat %>% group_by(., 소재지) %>% summarise_at(vars(금액), sum, na.rm = T) %>% data.frame(stringsAsFactors = F) %>% rename(합계금액 = 금액)
+local_dat = local_dat %>% arrange(합계금액)
+local_dat = local_dat[-c(1,7), ] #미분류, 국외소재 제외(17개 시,도구분으로 바꿈)
+
+# 데이터 시각화 - 지도
+local_dat = local_dat[c(17,12,5,9,3,6,4,1,16,11,7,10,8,14,13,15,2),]
+rownames(local_dat) = c(1:nrow(local_dat))
+local_dat$id = 0:16
+
+korea = shapefile("TL_SCCO_CTPRVN.shp")
+korea = spTransform(korea, CRS("+proj=longlat"))
+korea_map = fortify(korea)
+merge_result = merge(korea_map, local_dat, by = "id")
+
+plot = ggplot(data = merge_result) + geom_polygon(aes(x = long, y = lat, group = group, fill = 합계금액)) + labs(title = "시도별 합계금액") + theme_bw() + theme(title = element_text(size = 15))
+
+plot = plot + scale_fill_gradient2(low = "lightyellow", mid = "white", high = "brown", midpoint = .02)
+plot
+
+
+# 데이터 시각화 - 편차
+local_dat = local_dat %>% mutate(편차 = 합계금액 - mean(합계금액))
+
+sd_plot = ggplot(data = local_dat) + geom_bar(aes(x = 소재지, y = 편차, fill = as.factor(소재지)), stat = "identity") + theme(title = element_text(size = 15)) + theme_bw() + theme(axis.text.x = element_text(angle = 70, hjust = 1)) + labs(title = "시도별 합계금액 편차") + theme(legend.position = "none")
+
+sd_plot
+```

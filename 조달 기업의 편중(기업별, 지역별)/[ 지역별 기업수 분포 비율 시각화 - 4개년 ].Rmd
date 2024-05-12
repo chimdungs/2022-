@@ -1,0 +1,59 @@
+---
+title: '[ 지역별 기업수 분포 비율 시각화 - 4개년 ]'
+author: "Seo Ji Young"
+date: '2022 2 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# 필요한 세팅
+rm(list=ls()); gc(reset = T)
+require(readxl); require(dplyr)
+library(ggmap); library(ggplot2); library(raster)
+library(rgeos); library(maptools); library(rgdal)
+```
+
+```{r}
+# 지역별 기업 수 데이터 읽기
+Excel = read_xlsx("./산업별 지역별 기업수(2017~2020).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel = Excel[-1, -1]
+colnames(Excel) = c("지역", 2017, 2018, 2019, 2020)
+
+# 지역명 저장하기
+region = Excel[, 1]
+
+# 지역명 없애고 숫자형으로 바꾸기(계산하기 위해)
+Excel = Excel[, -1] %>% apply(., 2, as.numeric) %>% as.data.frame()
+
+Excel = Excel %>% mutate("기업수_합계" = c(1:nrow(Excel)))
+for(i in 1:nrow(Excel)){
+  Excel[i, 5] = Excel[i, 1] + Excel[i, 2] + Excel[i, 3] + Excel[i, 4]
+}
+Excel = Excel[, c(4, 5)]
+Excel = Excel %>% mutate("지역명" = region)
+Excel = Excel[, c(2, 3)]
+Excel = Excel[, c(2, 1)]
+Excel = Excel %>% slice(c(2:nrow(Excel))) # 전국 제외
+
+# 데이터 시각화 - 지도
+Excel$id = 0:16
+
+korea = shapefile("TL_SCCO_CTPRVN.shp")
+korea = spTransform(korea, CRS("+proj=longlat"))
+korea_map = fortify(korea)
+merge_result = merge(korea_map, Excel, by = "id")
+
+plot = ggplot(data = merge_result) + geom_polygon(aes(x = long, y = lat, group = group, fill = 기업수_합계)) + labs(title = "시도별 기업 분포") + theme_bw() + theme(title = element_text(size = 15))
+
+plot = plot + scale_fill_gradient2(low = "lightyellow", mid = "white", high = "brown", midpoint = .02)
+plot
+
+
+# 데이터 시각화 – 편차
+Excel = Excel %>% mutate(편차 = 기업수_합계 - mean(기업수_합계))
+
+sd_plot = ggplot(data = Excel) + geom_bar(aes(x = 지역명, y = 편차, fill = as.factor(지역명)), stat = "identity") + theme(title = element_text(size = 15)) + theme_bw() + theme(axis.text.x = element_text(angle = 70, hjust = 1)) + labs(title = "시도별 기업분포 편차") + theme(legend.position = "none")
+
+sd_plot
+```

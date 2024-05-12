@@ -1,0 +1,80 @@
+---
+title: '[ 기업 조달 실적(건수, 금액 정리) + 금액 비율 시각화 ]'
+author: "Seo Ji Young"
+date: '2022 2 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# 필요한 세팅
+rm(list = ls()); gc(reset = T)
+require(dplyr); require(readxl)
+
+# 엑셀 데이터 읽기(기업구분별 조달 현황)
+Excel_1 = read_xlsx("./조달청/1-3. 기업구분별 조달 현황(2015_12~2016_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_2 = read_xlsx("./조달청/1-3. 기업구분별 조달 현황(2016_12~2017_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_3 = read_xlsx("./조달청/1-3. 기업구분별 조달 현황(2017_12~2018_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_4 = read_xlsx("./조달청/1-3. 기업구분별 조달 현황(2018_12~2019_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_5 = read_xlsx("./조달청/1-3. 기업구분별 조달 현황(2019_12~2020_11).xlsx") %>% data.frame(stringsAsFactors = F)
+Excel_6 = read_xlsx("./조달청/1-3. 기업구분별 조달 현황(2020_12~2021_11).xlsx") %>% data.frame(stringsAsFactors = F)
+
+data_list = list(Excel_1, Excel_2, Excel_3, Excel_4, Excel_5, Excel_6)
+
+# 2016년 ~ 2021년 기업별 조달 건수 데이터(year_num_list)
+company = c("합계","대기업", "중견기업", "중소기업", "외국기업", "비영리법인 등 기타", "미분류")
+
+year_num_list = list()
+for(i in 1:6){
+  year_num_list[[i]] = data_list[[i]][2, c(3, 5, 7, 9, 11, 13, 15)]
+  colnames(year_num_list[[i]]) = company
+  year_num_list[[i]] = t(year_num_list[[i]])
+}
+year_num_list = year_num_list %>% do.call(cbind,.)
+year_num_list = year_num_list %>% apply(., 2, as.numeric) %>% data.frame(stringsAsFactors = F)
+colnames(year_num_list) = c(2016:2021)
+rownames(year_num_list) = company
+year_num_list
+
+# 2016년 ~ 2021년 기업별 조달 건수 퍼센트 데이터(year_num_per)
+year_num_per = year_num_list
+for(i in 1:6){
+  for(j in 1:7){
+    year_num_per[j, i] = year_num_per[j, i]/year_num_list[1, i]*100
+  }
+}
+rownames(year_num_per) = company
+year_num_per
+
+# 2016년 ~ 2021년 기업별 조달 금액 데이터(year_price_list)
+year_price_list = list()
+for(i in 1:6){
+  year_price_list[[i]] = data_list[[i]][2, c(4, 6, 8, 10, 12, 14, 16)]
+  colnames(year_price_list[[i]]) = company
+  year_price_list[[i]] = t(year_price_list[[i]])
+}
+year_price_list = year_price_list %>% do.call(cbind,.)
+year_price_list = year_price_list %>% apply(., 2, as.numeric) %>% data.frame(stringsAsFactors = F)
+colnames(year_price_list) = c(2016:2021)
+rownames(year_price_list) = company
+year_price_list
+
+# 2016년 ~ 2021년 기업별 조달 금액 퍼센트 데이터(year_price_per)
+year_price_per = year_price_list
+for(i in 1:6){
+  for(j in 1:7){
+    year_price_per[j, i] = year_price_per[j, i]/year_price_list[1, i]*100
+  }
+}
+rownames(year_price_per) = company
+year_price_per
+
+# 건수 비율과 금액 비율에서 합계 나타내는 행 제거하기(year_num_per, year_price_per)
+year_num_per = year_num_per %>% as.data.frame() %>% slice(c(2:nrow(year_num_per)))
+year_price_per = year_price_per %>% as.data.frame() %>% slice(c(2:nrow(year_price_per)))
+
+year_num_per; year_price_per
+```
